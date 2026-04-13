@@ -11,15 +11,41 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userRole, setUserRole] = useState(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
+  // ✅ Cek auth & role
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      if (userData) setUserRole(JSON.parse(userData).role);
+      
+      if (!token || !userData) {
+        router.push('/login');
+        return;
+      }
+      
+      try {
+        const user = JSON.parse(userData);
+        setUserRole(user.role);
+        
+        // KOREKSI LOGIN SISWA GA BISA MASUK /members
+        if (user.role !== 'admin') {
+          alert('❌ Akses ditolak. Halaman ini hanya untuk admin.');
+          router.push('/dashboard');
+          return;
+        }
+        
+        setIsAuthorized(true);
+      } catch {
+        router.push('/login');
+      }
     }
-  }, []);
+  }, [router]);
 
+  // ✅ Fetch data hanya jika authorized
   useEffect(() => {
+    if (!isAuthorized) return;
+    
     const fetchMembers = async () => {
       try {
         const res = await apiFetch('/members');
@@ -32,7 +58,21 @@ export default function MembersPage() {
       }
     };
     fetchMembers();
-  }, []);
+  }, [isAuthorized]);
+
+  // ✅ Redirect jika belum authorized
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4">
+            🔐
+          </div>
+          <p className="text-gray-500">Memeriksa akses...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleDelete = async (id, name) => {
     if (!confirm(`Yakin hapus anggota "${name}"?`)) return;
@@ -60,7 +100,6 @@ export default function MembersPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <div>
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 hover:underline mb-2"
@@ -69,7 +108,6 @@ export default function MembersPage() {
             </Link>
             <h1 className="text-2xl font-bold text-gray-900">👥 Data Anggota</h1>
             <p className="text-sm text-gray-500">Kelola data siswa & admin perpustakaan</p>
-            </div>
           </div>
           <div className="flex gap-3 w-full md:w-auto">
             <input
@@ -77,11 +115,9 @@ export default function MembersPage() {
               value={search} onChange={(e) => setSearch(e.target.value)}
               className="flex-1 md:w-64 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
             />
-            {userRole === 'admin' && (
-              <Link href="/members/create" className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-5 py-2.5 rounded-xl font-medium hover:opacity-90 transition shadow-md whitespace-nowrap">
-                ➕ Tambah
-              </Link>
-            )}
+            <Link href="/members/create" className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-5 py-2.5 rounded-xl font-medium hover:opacity-90 transition shadow-md whitespace-nowrap">
+              ➕ Tambah
+            </Link>
           </div>
         </div>
 
@@ -103,7 +139,7 @@ export default function MembersPage() {
                     <th className="px-6 py-4">Kelas</th>
                     <th className="px-6 py-4">Email</th>
                     <th className="px-6 py-4 text-center">Role</th>
-                    {userRole === 'admin' && <th className="px-6 py-4 text-center">Aksi</th>}
+                    <th className="px-6 py-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -124,14 +160,12 @@ export default function MembersPage() {
                           {m.role === 'admin' ? '👑 Admin' : '🎓 Siswa'}
                         </span>
                       </td>
-                      {userRole === 'admin' && (
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center gap-2">
-                            <button onClick={() => handleEdit(m.id)} className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition" title="Edit">✏️</button>
-                            <button onClick={() => handleDelete(m.id, m.name)} className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition" title="Hapus">🗑️</button>
-                          </div>
-                        </td>
-                      )}
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button onClick={() => handleEdit(m.id)} className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition" title="Edit">✏️</button>
+                          <button onClick={() => handleDelete(m.id, m.name)} className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition" title="Hapus">🗑️</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

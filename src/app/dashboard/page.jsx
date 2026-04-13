@@ -45,6 +45,9 @@ function Sidebar({ user, isOpen, onClose }) {
     { href: '/members', label: 'Data Anggota', icon: '👥' },
     { href: '/borrow', label: 'Transaksi', icon: '🔄' },
     { href: '/borrowing-history', label: 'Riwayat', icon: '🗂️' },
+    { href: '/favorites', label: 'Favorit', icon: '🔖' },
+    { href: '/manual', label: 'Panduan', icon: '❓' },
+
   ];
 
   const studentLinks = [
@@ -52,7 +55,8 @@ function Sidebar({ user, isOpen, onClose }) {
     { href: '/books', label: 'Cari Buku', icon: '🔍' },
     { href: '/my-borrows', label: 'Peminjaman Saya', icon: '📖' },
     { href: '/borrowing-history', label: 'Riwayat', icon: '🗂️' },
-    { href: '/request', label: 'Ajukan Buku', icon: '📝' },
+    { href: '/favorites', label: 'Favorit', icon: '🔖' },
+    { href: '/manual', label: 'Panduan', icon: '❓' },
   ];
 
   const links = user?.role === 'admin' ? adminLinks : studentLinks;

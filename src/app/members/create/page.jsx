@@ -131,7 +131,7 @@ export default function CreateMemberPage() {
                 <input
                   type="email" name="email" value={formData.email} onChange={handleChange}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition"
-                  placeholder="siswa{new Date().getTime()}@sekolah.sch.id"
+                  placeholder="Example..."
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>

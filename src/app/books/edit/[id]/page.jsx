@@ -67,18 +67,17 @@ export default function EditBookPage() {
     
     if (name === 'cover_image' && files?.[0]) {
       const file = files[0];
-      // Validasi ukuran file (max 2MB)
+      // Validasi ukuran & tipe file
       if (file.size > 2 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, cover_image: 'Ukuran gambar maksimal 2MB' }));
+        setErrors(prev => ({ ...prev, cover_image: 'Maksimal 2MB' }));
         return;
       }
-      // Validasi tipe file
       if (!['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'].includes(file.type)) {
-        setErrors(prev => ({ ...prev, cover_image: 'Format gambar harus JPG, PNG, GIF, atau WebP' }));
+        setErrors(prev => ({ ...prev, cover_image: 'Format: JPG, PNG, GIF, WebP' }));
         return;
       }
       setFormData(prev => ({ ...prev, cover_image: file }));
-      // Preview gambar baru
+      // Preview
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(file);
@@ -99,66 +98,77 @@ export default function EditBookPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setIsSubmitting(true);
+  e.preventDefault();
+  if (!validate()) return;
+  setIsSubmitting(true);
 
-    try {
-      const token = localStorage.getItem('token');
-      
-      // ✅ Gunakan FormData untuk upload file
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('author', formData.author);
-      formDataToSend.append('publisher', formData.publisher || '');
-      formDataToSend.append('year', formData.year ? parseInt(formData.year) : '');
-      formDataToSend.append('stock', parseInt(formData.stock));
-      
-      // ✅ Handle gambar:
-      // - Jika ada file baru: kirim file
-      // - Jika user klik ✕ hapus: kirim empty string
-      // - Jika tidak ada perubahan: tidak kirim cover_image sama sekali
-      if (formData.cover_image instanceof File) {
-        formDataToSend.append('cover_image', formData.cover_image);
-      } else if (formData.cover_image === null && existingCover) {
-        // User ingin menghapus cover lama
-        formDataToSend.append('cover_image', '');
-      }
+  try {
+    const token = localStorage.getItem('token');
 
-      const res = await fetch(`http://localhost:8000/api/books/${bookId}`, {
-        method: 'PUT',
+    const formDataToSend = new FormData();
+
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('author', formData.author);
+    formDataToSend.append('publisher', formData.publisher || '');
+    formDataToSend.append(
+      'year',
+      formData.year ? parseInt(formData.year) : ''
+    );
+    formDataToSend.append(
+      'stock',
+      parseInt(formData.stock)
+    );
+
+    // 🔥 WAJIB: spoofing method
+    formDataToSend.append('_method', 'PUT');
+
+    // 🔥 HANDLE COVER
+    if (formData.cover_image instanceof File) {
+      formDataToSend.append('cover_image', formData.cover_image);
+      console.log('📤 Upload file baru');
+    } else if (formData.cover_image === null && existingCover === null) {
+      // user klik hapus
+      formDataToSend.append('cover_image', '');
+      console.log('📤 Hapus cover');
+    } else {
+      console.log('📤 Tidak ada perubahan cover');
+    }
+
+    const res = await fetch(
+      `http://localhost:8000/api/books/${bookId}`,
+      {
+        method: 'POST', // 🔥 FIX DI SINI
         headers: {
-          // ✅ PENTING: JANGAN set Content-Type untuk FormData!
-          // Browser akan otomatis set "multipart/form-data" dengan boundary yang benar
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-          'Accept': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+          Accept: 'application/json',
         },
         body: formDataToSend,
-      });
-
-      const data = await res.json();
-      console.log('📥 Response:', data); // Debug
-
-      if (res.ok) {
-        alert('✅ ' + data.message);
-        router.push('/books');
-      } else {
-        // Tampilkan error validasi jika ada
-        if (data.errors) {
-          const messages = Object.values(data.errors).flat().join('\n');
-          alert(`❌ Validasi gagal:\n${messages}`);
-        } else {
-          alert('❌ ' + (data.message || 'Gagal update buku'));
-        }
       }
-    } catch (err) {
-      console.error('Submit error:', err);
-      alert('❌ Kesalahan jaringan: ' + err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    );
 
+    const data = await res.json();
+    console.log('📥 Response:', data);
+
+    if (res.ok) {
+      alert('✅ ' + data.message);
+      router.push('/books');
+    } else {
+      if (data.errors) {
+        const messages = Object.values(data.errors)
+          .flat()
+          .join('\n');
+        alert(`❌ Validasi gagal:\n${messages}`);
+      } else {
+        alert('❌ ' + (data.message || 'Gagal update buku'));
+      }
+    }
+  } catch (err) {
+    console.error('Submit error:', err);
+    alert('❌ Error jaringan: ' + err.message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const handleRemoveCover = () => {
     setPreview(null);
     setExistingCover(null);
@@ -184,7 +194,7 @@ export default function EditBookPage() {
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 space-y-5">
           
-          {/* ✅ Preview Gambar */}
+          {/* Preview Gambar */}
           {preview && (
             <div className="flex justify-center">
               <div className="relative">

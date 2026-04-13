@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import Link from 'next/link'; // ✅ FIX WAJIB
 
 export default function BorrowPage() {
   const [borrowings, setBorrowings] = useState([]);
@@ -119,12 +120,20 @@ export default function BorrowPage() {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         
+        
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">🔄 Transaksi Peminjaman</h1>
             <p className="text-sm text-gray-500">Kelola catatan pinjam & kembali buku</p>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 hover:underline mb-2"
+            >
+              ← Kembali ke Dashboard
+            </Link>
           </div>
+          
           {userRole === 'admin' && (
             <button 
               onClick={() => setShowModal(true)} 
@@ -132,6 +141,7 @@ export default function BorrowPage() {
             >
               ➕ Peminjaman Baru
             </button>
+            
           )}
         </div>
 
