@@ -11,8 +11,9 @@ export default function BooksPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userRole, setUserRole] = useState(null);
+  const [userId, setUserId] = useState(null);
 
-  // Cek role user
+  // Cek role user & userId
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const userData = localStorage.getItem('user');
@@ -20,6 +21,7 @@ export default function BooksPage() {
         try {
           const user = JSON.parse(userData);
           setUserRole(user.role);
+          setUserId(user.id);
         } catch (e) {
           console.error('Gagal parse user data');
         }
@@ -44,14 +46,57 @@ export default function BooksPage() {
     fetchBooks();
   }, []);
 
+  // ✅ Helper: Get cover image URL
+  const getCoverUrl = (coverImage) => {
+    if (!coverImage) return null;
+    if (coverImage.startsWith('http')) return coverImage;
+    return `http://localhost:8000/storage/${coverImage}`;
+  };
+
+  // ✅ Helper: Cek apakah buku ada di favorit
+  const isFavorite = (bookId) => {
+    if (!userId) return false;
+    const favKey = `favorites_user_${userId}`;
+    const savedFavs = localStorage.getItem(favKey);
+    const favIds = savedFavs ? JSON.parse(savedFavs) : [];
+    return favIds.includes(bookId);
+  };
+
+  // ✅ Toggle favorite
+  const toggleFavorite = (bookId, e) => {
+    e.stopPropagation(); // Mencegah event bubbling
+
+    if (!userId) {
+      alert('Silakan login terlebih dahulu');
+      return;
+    }
+
+    const favKey = `favorites_user_${userId}`;
+    const savedFavs = localStorage.getItem(favKey);
+    let favIds = savedFavs ? JSON.parse(savedFavs) : [];
+
+    if (favIds.includes(bookId)) {
+      // Hapus dari favorit
+      favIds = favIds.filter(id => id !== bookId);
+    } else {
+      // Tambah ke favorit
+      favIds.push(bookId);
+    }
+
+    localStorage.setItem(favKey, JSON.stringify(favIds));
+
+    // Force re-render dengan update state kecil
+    setBooks([...books]);
+  };
+
   // ✅ Fungsi Hapus Buku
   const handleDeleteBook = async (id, title) => {
     if (!confirm(`Yakin ingin menghapus "${title}"?`)) return;
-    
+
     try {
       const res = await apiFetch(`/books/${id}`, { method: 'DELETE' });
       const data = await res.json();
-      
+
       if (res.ok) {
         alert('✅ ' + data.message);
         setBooks(prev => prev.filter(book => book.id !== id));
@@ -68,15 +113,6 @@ export default function BooksPage() {
     router.push(`/books/edit/${id}`);
   };
 
-  // ✅ Helper: Get cover image URL
-  const getCoverUrl = (coverImage) => {
-    if (!coverImage) return null;
-    // Jika sudah full URL, return langsung
-    if (coverImage.startsWith('http')) return coverImage;
-    // Jika hanya path relatif, prepend storage URL
-    return `http://localhost:8000/storage/${coverImage}`;
-  };
-
   // Filter pencarian
   const filteredBooks = books.filter(book =>
     book.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -85,7 +121,7 @@ export default function BooksPage() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-pink-50 via-white to-purple-50">
-      
+
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-6 py-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -121,7 +157,7 @@ export default function BooksPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-        
+
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[...Array(6)].map((_, i) => (
@@ -151,50 +187,60 @@ export default function BooksPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredBooks.map((book) => {
               const coverUrl = getCoverUrl(book.cover_image);
-              
+              const fav = isFavorite(book.id);
+
               return (
                 <div
                   key={book.id}
-                  className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                  className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all group relative"
                 >
-                  <div className="flex items-start gap-4 mb-4">
-                    {/* ✅ Cover Image dengan Fallback */}
-                    <div className="w-16 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0 flex items-center justify-center">
-                      {coverUrl ? (
-                        <img 
-                          src={coverUrl}
-                          alt={book.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback ke emoji jika gambar error
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-2xl text-gray-400">📖</div>';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl text-gray-400">
-                          📖
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1" title={book.title}>
-                        {book.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 mb-2">{book.author}</p>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          book.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          {book.stock > 0 ? `● Tersedia: ${book.stock}` : '● Stok Habis'}
-                        </span>
+                  {/* ✅ Tombol Favorit */}
+                  <button
+                    onClick={(e) => toggleFavorite(book.id, e)}
+                    className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-md transition z-10 ${fav
+                      ? 'bg-red-100 text-red-500 hover:bg-red-200'
+                      : 'bg-white/80 text-gray-400 hover:text-red-500 border border-gray-200'
+                      }`}
+                    title={fav ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+                  >
+                    {fav ? '❤️' : '🤍'}
+                  </button>
+
+                  {/* Cover Image */}
+                  <div className="w-16 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0 flex items-center justify-center">
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt={book.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-2xl text-gray-400">📖</div>';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-2xl text-gray-400">
+                        📖
                       </div>
+                    )}
+                  </div>
+
+                  {/* Book Info */}
+                  <div className="flex-1 min-w-0 mt-3">
+                    <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1" title={book.title}>
+                      {book.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-2">{book.author}</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${book.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                        {book.stock > 0 ? `● Tersedia: ${book.stock}` : '● Stok Habis'}
+                      </span>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mt-3">
                     {book.stock > 0 && userRole === 'siswa' && (
                       <button
                         onClick={() => borrowBook(book.id, book.title)}
@@ -203,7 +249,7 @@ export default function BooksPage() {
                         Pinjam
                       </button>
                     )}
-                    
+
                     {userRole === 'admin' && (
                       <>
                         <button
@@ -243,16 +289,16 @@ export default function BooksPage() {
   );
 }
 
-// Fungsi pinjam buku (sama seperti sebelumnya)
+// Fungsi pinjam buku
 async function borrowBook(id, title) {
   if (!confirm(`Pinjam "${title}"?`)) return;
   try {
     const res = await apiFetch('/borrowings', {
       method: 'POST',
-      body: JSON.stringify({ 
-        book_id: id, 
-        borrow_date: new Date().toISOString().split('T')[0], 
-        return_date: new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0] 
+      body: JSON.stringify({
+        book_id: id,
+        borrow_date: new Date().toISOString().split('T')[0],
+        return_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       }),
     });
     const data = await res.json();

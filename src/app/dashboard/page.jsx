@@ -14,7 +14,7 @@ function MenuCard({ title, desc, href, icon, gradient = 'from-purple-500 to-pink
     >
       {/* Gradient accent bar */}
       <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
-      
+
       <div className="flex items-start gap-4">
         {/* Icon with gradient background */}
         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} text-white flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition-transform`}>
@@ -38,25 +38,26 @@ function MenuCard({ title, desc, href, icon, gradient = 'from-purple-500 to-pink
 // 🧭 Sidebar Component (Enhanced)
 function Sidebar({ user, isOpen, onClose }) {
   const pathname = usePathname();
-  
+
+  // Di dalam komponen Sidebar, update adminLinks & studentLinks:
+
   const adminLinks = [
-    { href: '/dashboard', label: 'Dashboard', icon: '🏠', active: true },
+    { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
     { href: '/books', label: 'Data Buku', icon: '📚' },
     { href: '/members', label: 'Data Anggota', icon: '👥' },
     { href: '/borrow', label: 'Transaksi', icon: '🔄' },
     { href: '/borrowing-history', label: 'Riwayat', icon: '🗂️' },
-    { href: '/favorites', label: 'Favorit', icon: '🔖' },
-    { href: '/manual', label: 'Panduan', icon: '❓' },
-
+    { href: '/favorites', label: ' Favorit', icon: '❤️' }, // ✅ TAMBAHKAN INI
+    { href: '/manual', label: ' Panduan', icon: '📖' },
   ];
 
   const studentLinks = [
-    { href: '/dashboard', label: 'Dashboard', icon: '🏠', active: true },
+    { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
     { href: '/books', label: 'Cari Buku', icon: '🔍' },
     { href: '/my-borrows', label: 'Peminjaman Saya', icon: '📖' },
     { href: '/borrowing-history', label: 'Riwayat', icon: '🗂️' },
-    { href: '/favorites', label: 'Favorit', icon: '🔖' },
-    { href: '/manual', label: 'Panduan', icon: '❓' },
+    { href: '/favorites', label: '❤️ Favorit', icon: '❤️' }, // ✅ TAMBAHKAN INI
+    { href: '/manual', label: '📖 Panduan', icon: '❓' },
   ];
 
   const links = user?.role === 'admin' ? adminLinks : studentLinks;
@@ -65,18 +66,17 @@ function Sidebar({ user, isOpen, onClose }) {
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-out ${
-        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}>
         <div className="flex flex-col h-full">
-          
+
           {/* Logo Section */}
           <div className="p-5 border-b border-gray-100">
             <div className="flex items-center gap-3">
@@ -102,11 +102,10 @@ function Sidebar({ user, isOpen, onClose }) {
                   key={link.href}
                   href={link.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isActive
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
                       ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-purple-200'
                       : 'text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:pl-5'
-                  }`}
+                    }`}
                 >
                   <span className="text-lg">{link.icon}</span>
                   <span className="flex-1">{link.label}</span>
@@ -165,7 +164,7 @@ export default function Dashboard() {
   // ✅ Fetch real-time stats dari API
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchStats = async () => {
       try {
         const res = await apiFetch('/dashboard/stats');
@@ -177,25 +176,25 @@ export default function Dashboard() {
         setLoadingStats(false);
       }
     };
-    
+
     fetchStats();
   }, [user]);
 
   // Fetch active borrowings
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchActiveBorrows = async () => {
       try {
         const res = await apiFetch('/borrowings');
         const json = await res.json();
         const all = json.data || json;
-        
+
         if (user.role === 'admin') {
           const active = all.filter(b => b.status === 'borrowed').slice(0, 5);
           setActiveBorrows(active);
         } else {
-          const mine = all.filter(b => 
+          const mine = all.filter(b =>
             b.user_id === parseInt(user.id) && b.status === 'borrowed'
           ).slice(0, 3);
           setActiveBorrows(mine);
@@ -206,14 +205,14 @@ export default function Dashboard() {
         setLoadingBorrows(false);
       }
     };
-    
+
     fetchActiveBorrows();
   }, [user]);
 
   // ✅ Fungsi Logout
   const handleLogout = async () => {
     if (!confirm('Yakin ingin logout?')) return;
-    
+
     try {
       const token = localStorage.getItem('token');
       await apiFetch('/logout', {
@@ -222,11 +221,11 @@ export default function Dashboard() {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       // Clear localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      
+
       // Redirect ke login
       router.push('/login');
     } catch (err) {
@@ -258,24 +257,24 @@ export default function Dashboard() {
 
   // Dynamic stats dengan fallback ke data real-time
   const adminStats = [
-    { 
-      label: 'Total Buku', 
-      value: loadingStats ? '...' : (dashboardStats?.total_books ?? 0), 
-      icon: '📚', 
+    {
+      label: 'Total Buku',
+      value: loadingStats ? '...' : (dashboardStats?.total_books ?? 0),
+      icon: '📚',
       color: 'from-pink-500 to-rose-500',
       trend: '+12%'
     },
-    { 
-      label: 'Anggota', 
-      value: loadingStats ? '...' : (dashboardStats?.total_members ?? 0), 
-      icon: '👥', 
+    {
+      label: 'Anggota',
+      value: loadingStats ? '...' : (dashboardStats?.total_members ?? 0),
+      icon: '👥',
       color: 'from-purple-500 to-indigo-500',
       trend: '+5%'
     },
-    { 
-      label: 'Peminjaman Aktif', 
-      value: loadingStats ? '...' : (dashboardStats?.active_borrowings ?? activeBorrows.length), 
-      icon: '🔄', 
+    {
+      label: 'Peminjaman Aktif',
+      value: loadingStats ? '...' : (dashboardStats?.active_borrowings ?? activeBorrows.length),
+      icon: '🔄',
       color: 'from-blue-500 to-cyan-500',
       trend: 'Live'
     },
@@ -286,12 +285,12 @@ export default function Dashboard() {
       <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* Mobile Header */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between">
-            <button 
-              onClick={() => setSidebarOpen(true)} 
+            <button
+              onClick={() => setSidebarOpen(true)}
               className="p-2 rounded-xl hover:bg-gray-100 transition"
               aria-label="Buka menu"
             >
@@ -309,7 +308,7 @@ export default function Dashboard() {
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           <div className="max-w-6xl mx-auto space-y-8">
-            
+
             {/* Welcome Header + Logout Button */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -317,8 +316,8 @@ export default function Dashboard() {
                   Halo, {user.name} 👋
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {user.role === 'admin' 
-                    ? 'Kelola perpustakaan dengan mudah dari dashboard ini.' 
+                  {user.role === 'admin'
+                    ? 'Kelola perpustakaan dengan mudah dari dashboard ini.'
                     : 'Lihat status peminjaman dan temukan buku favoritmu.'}
                 </p>
               </div>
@@ -347,19 +346,18 @@ export default function Dashboard() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {adminStats.map((stat, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition group"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition`}>
                           {stat.icon}
                         </div>
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          stat.trend === 'Live' 
-                            ? 'bg-blue-100 text-blue-700' 
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${stat.trend === 'Live'
+                            ? 'bg-blue-100 text-blue-700'
                             : 'bg-green-100 text-green-700'
-                        }`}>
+                          }`}>
                           {stat.trend}
                         </span>
                       </div>
@@ -404,8 +402,8 @@ export default function Dashboard() {
                 <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
                   {user.role === 'admin' ? '📚 Peminjaman Aktif' : '📖 Buku Kamu'}
                 </h2>
-                <Link 
-                  href="/borrowing-history" 
+                <Link
+                  href="/borrowing-history"
                   className="text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center gap-1 hover:gap-2 transition-all"
                 >
                   Lihat Semua <span>→</span>
@@ -433,13 +431,13 @@ export default function Dashboard() {
                     {user.role === 'admin' ? 'Semua Buku Telah Dikembalikan' : 'Kamu Tidak Sedang Meminjam'}
                   </h3>
                   <p className="text-sm text-gray-500 mb-4">
-                    {user.role === 'admin' 
-                      ? 'Tidak ada peminjaman aktif saat ini.' 
+                    {user.role === 'admin'
+                      ? 'Tidak ada peminjaman aktif saat ini.'
                       : 'Silakan jelajahi katalog untuk meminjam buku.'}
                   </p>
                   {user.role === 'siswa' && (
-                    <Link 
-                      href="/books" 
+                    <Link
+                      href="/books"
                       className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition shadow"
                     >
                       🔍 Cari Buku
@@ -451,17 +449,17 @@ export default function Dashboard() {
                   {activeBorrows.map((b) => {
                     // ✅ Get cover URL untuk borrowing ini
                     const coverUrl = getBorrowingCoverUrl(b.book);
-                    
+
                     return (
-                      <div 
-                        key={b.id} 
+                      <div
+                        key={b.id}
                         className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-purple-200 transition group"
                       >
                         <div className="flex items-center gap-4">
                           {/* ✅ Cover Image dengan Fallback */}
                           <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0 flex items-center justify-center">
                             {coverUrl ? (
-                              <img 
+                              <img
                                 src={coverUrl}
                                 alt={b.book?.title || 'Buku'}
                                 className="w-full h-full object-cover"
@@ -476,7 +474,7 @@ export default function Dashboard() {
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Info */}
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-gray-900 truncate">
@@ -496,7 +494,7 @@ export default function Dashboard() {
                               )}
                             </div>
                           </div>
-                          
+
                           {/* Status Badge */}
                           <div className="text-right">
                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
@@ -504,8 +502,8 @@ export default function Dashboard() {
                               Aktif
                             </span>
                             {user.role === 'siswa' && (
-                              <Link 
-                                href="/my-borrows" 
+                              <Link
+                                href="/my-borrows"
                                 className="block mt-2 text-xs text-purple-600 hover:text-purple-700 font-medium"
                               >
                                 Kelola →
